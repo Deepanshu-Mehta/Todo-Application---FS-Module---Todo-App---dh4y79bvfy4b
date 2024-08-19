@@ -1,99 +1,73 @@
 const fs = require('fs');
-const path = require('path');
 
-// Path to the database file (db.txt)
-const dbPath = path.join(__dirname, 'db.txt');
+const convertToJson = (data) => {
+  data = data.split("}\n{");
+  data = data.join("},\n{");
+  data = "[" + data + "]";
+  data = JSON.parse(data);
+  return data;
+}
 
-// Function to create a new todo
-const createTodoSync = (title) => {
-  const newTodo = {
+const getTodosSync = () => fs.readFileSync('db.txt', 'utf-8');
+
+const getTodoSync = (id) => {
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  for (let i of data) {
+    if (i.id === id) {
+      return JSON.stringify(i);
+    }
+  }
+};
+
+const createTodoSync = (todo) => {
+  const data = {
     id: Date.now(),
-    title,
+    title: todo,
     isCompleted: false,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
-
-  const todoString = JSON.stringify(newTodo, null, 2);
-
-  // Append the new todo to db.txt
-  fs.appendFileSync(dbPath, todoString + '\n');
+  fs.appendFileSync('db.txt', `${JSON.stringify(data, null, 2)}\n`);
 };
 
-// Function to get all todos
-const getTodosSync = () => {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf8');
-    return data;
-  } catch (err) {
-    throw new Error('Error reading the todos.');
-  }
-};
-
-// Function to get a specific todo by ID
-const getTodoSync = (id) => {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf8');
-    const todos = data.trim().split('\n').map(line => JSON.parse(line));
-    const todo = todos.find(todo => todo.id === id);
-
-    if (!todo) {
-      throw new Error('Todo not found.');
-    }
-
-    return JSON.stringify(todo, null, 2);
-  } catch (err) {
-    throw new Error('Error getting the todo.');
-  }
-};
-
-// Function to update a specific todo by ID
 const updateTodoSync = (id, updates) => {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf8');
-    let todos = data.trim().split('\n').map(line => JSON.parse(line));
-
-    let todoFound = false;
-    todos = todos.map(todo => {
-      if (todo.id === id) {
-        todoFound = true;
-        return {
-          ...todo,
-          ...updates,
-          updatedAt: new Date().toISOString(),
-        };
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  for (let i in data) {
+    if (data[i].id === id) {
+      for (let j of Object.keys(updates)) {
+        data[i][j] = updates[j];
       }
-      return todo;
-    });
-
-    if (!todoFound) {
-      throw new Error('Todo not found.');
+      data[i].updatedAt = new Date().toISOString();
     }
-
-    // Write updated todos back to db.txt
-    fs.writeFileSync(dbPath, todos.map(todo => JSON.stringify(todo, null, 2)).join('\n') + '\n');
-  } catch (err) {
-    throw new Error('Error updating the todo.');
+    if (i == 0) {
+      fs.writeFileSync('db.txt', `${JSON.stringify(data[i], null, 2)}\n`);
+    } else {
+      fs.appendFileSync('db.txt', `${JSON.stringify(data[i], null, 2)}\n`);
+    }
   }
 };
 
-// Function to delete a specific todo by ID
 const deleteTodoSync = (id) => {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf8');
-    const todos = data.trim().split('\n').map(line => JSON.parse(line));
-    const filteredTodos = todos.filter(todo => todo.id !== id);
-
-    if (todos.length === filteredTodos.length) {
-      throw new Error('Todo not found.');
-    }
-
-    // Write updated todos back to db.txt
-    fs.writeFileSync(dbPath, filteredTodos.map(todo => JSON.stringify(todo, null, 2)).join('\n') + '\n');
-  } catch (err) {
-    throw new Error('Error deleting the todo.');
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  const filteredData = data.filter(todo => todo.id !== id);
+  fs.writeFileSync('db.txt', '');
+  for (let i of filteredData) {
+    fs.appendFileSync('db.txt', `${JSON.stringify(i, null, 2)}\n`);
   }
 };
+
+const getTodos = () => {};
+
+const getTodo = (id) => {};
+
+const createTodo = (todo) => {};
+
+const updateTodo = async (id, updates) => {};
+
+const deleteTodo = async (id) => {};
 
 module.exports = {
   getTodosSync,
@@ -101,4 +75,9 @@ module.exports = {
   createTodoSync,
   updateTodoSync,
   deleteTodoSync,
+  getTodos,
+  getTodo,
+  createTodo,
+  deleteTodo,
+  updateTodo,
 };
